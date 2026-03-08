@@ -44,13 +44,15 @@ To keep payload and runtime overhead minimal for weak connectivity, this impleme
 
 No package installation is required.
 
-### Run locally
+### Run locally (with API proxy + hot reload)
 
 ```bash
-npm run start
+npm run dev
 ```
 
 Open `http://localhost:4173`.
+
+`npm run start` serves static files only and does not include the proxy layer.
 
 ### Run tests
 

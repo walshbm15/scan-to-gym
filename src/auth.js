@@ -4,7 +4,13 @@ import { toEpochMs, clampDelay } from './time.js';
 import { loginWithPin, refreshAccessToken } from './api.js';
 
 export class AuthController {
-  constructor({ now = () => Date.now(), setTimeoutFn = setTimeout, clearTimeoutFn = clearTimeout, onAuthChange = () => {}, onError = () => {} } = {}) {
+  constructor({
+    now = () => Date.now(),
+    setTimeoutFn = (cb, delay) => globalThis.setTimeout(cb, delay),
+    clearTimeoutFn = (id) => globalThis.clearTimeout(id),
+    onAuthChange = () => {},
+    onError = () => {},
+  } = {}) {
     this.now = now;
     this.setTimeoutFn = setTimeoutFn;
     this.clearTimeoutFn = clearTimeoutFn;

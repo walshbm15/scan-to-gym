@@ -1,3 +1,4 @@
+import QRCode from 'qrcode';
 import { AuthController } from './auth.js';
 import { QrController } from './qr.js';
 import { clearAuthData } from './storage.js';
@@ -29,6 +30,7 @@ const qr = new QrController({
   onState: renderQr,
   onError: (error) => showError(els.qrError, `Could not refresh QR: ${error.message}`),
 });
+let qrRenderVersion = 0;
 
 function showError(element, message) {
   element.textContent = message;
@@ -48,20 +50,29 @@ function setLoggedIn(isLoggedIn) {
 }
 
 function renderQr(state) {
-  const qrPayload = state?.qrCode || state?.qrcode || state?.code || state?.value || '';
+  const qrPayload = getQrPayload(state);
   if (qrPayload) {
     els.qrContainer.innerHTML = '';
+    const renderVersion = ++qrRenderVersion;
     if (String(qrPayload).startsWith('data:image')) {
       const img = document.createElement('img');
       img.src = qrPayload;
       img.alt = 'Gym entry QR code';
       img.className = 'qr-image';
       els.qrContainer.appendChild(img);
+    } else if (String(qrPayload).trim().startsWith('<svg')) {
+      const svg = document.createElement('div');
+      svg.className = 'qr-fallback';
+      svg.innerHTML = String(qrPayload);
+      els.qrContainer.appendChild(svg);
+    } else if (looksLikeBase64(qrPayload)) {
+      const img = document.createElement('img');
+      img.src = `data:image/png;base64,${qrPayload}`;
+      img.alt = 'Gym entry QR code';
+      img.className = 'qr-image';
+      els.qrContainer.appendChild(img);
     } else {
-      const pre = document.createElement('pre');
-      pre.className = 'qr-fallback';
-      pre.textContent = qrPayload;
-      els.qrContainer.appendChild(pre);
+      renderGeneratedQr(els.qrContainer, qrPayload, renderVersion);
     }
   }
 
@@ -75,11 +86,73 @@ function renderQr(state) {
   els.qrRefreshing.classList.toggle('hidden', !state?.refreshing);
 }
 
+function getQrPayload(state) {
+  if (!state || typeof state !== 'object') return '';
+  const directCandidates = [
+    state.QrCode,
+    state.qrCode,
+    state.qrcode,
+    state.qr_code,
+    state.QRCode,
+    state.code,
+    state.value,
+    state.payload,
+    state.data,
+    state.image,
+    state.imageData,
+    state.qrImage,
+    state.qrSvg,
+    state.svg,
+  ];
+  for (const candidate of directCandidates) {
+    if (typeof candidate === 'string' && candidate.trim()) return candidate;
+  }
+  const nestedCandidates = [state.qr, state.Qr, state.qrCodeData, state.result, state.Result, state.memberQrCode];
+  for (const node of nestedCandidates) {
+    if (node && typeof node === 'object') {
+      const nested = getQrPayload(node);
+      if (nested) return nested;
+    } else if (typeof node === 'string' && node.trim()) {
+      return node;
+    }
+  }
+  return '';
+}
+
+function looksLikeBase64(value) {
+  const raw = String(value || '').trim();
+  if (!raw || raw.startsWith('http://') || raw.startsWith('https://') || raw.includes('<svg')) return false;
+  return /^[A-Za-z0-9+/]+={0,2}$/.test(raw) && raw.length > 100;
+}
+
+function renderGeneratedQr(container, payload, renderVersion) {
+  QRCode.toDataURL(String(payload), {
+    errorCorrectionLevel: 'M',
+    margin: 1,
+    width: 300,
+  }).then((dataUrl) => {
+    if (renderVersion !== qrRenderVersion) return;
+    container.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    img.alt = 'Gym entry QR code';
+    img.className = 'qr-image';
+    container.appendChild(img);
+  }).catch(() => {
+    if (renderVersion !== qrRenderVersion) return;
+    container.innerHTML = '';
+    const pre = document.createElement('pre');
+    pre.className = 'qr-fallback';
+    pre.textContent = payload;
+    container.appendChild(pre);
+  });
+}
+
 function loadUserName() {
   els.userMenuName.textContent = auth.getAuth()?.username || els.usernameInput.value || 'Member';
 }
 
-async function bootstrapLoggedIn() {
+async function bootstrapLoggedIn({ autoRefreshQr = true } = {}) {
   setLoggedIn(true);
   loadUserName();
   auth.scheduleRefresh();
@@ -88,7 +161,7 @@ async function bootstrapLoggedIn() {
   if (existingQr) {
     renderQr(existingQr);
     qr.schedule(auth.getAuth().access_token);
-  } else {
+  } else if (autoRefreshQr) {
     await qr.refresh(auth.getAuth().access_token, { background: true });
   }
 }
@@ -115,8 +188,9 @@ els.loginBtn.addEventListener('click', async () => {
   els.loginBtn.disabled = true;
   try {
     await auth.login(username, pin);
-    await bootstrapLoggedIn();
+    await bootstrapLoggedIn({ autoRefreshQr: false });
   } catch (error) {
+    console.error('Login failed', error);
     showError(els.loginError, `Login failed: ${error.message}`);
   } finally {
     els.loginBtn.disabled = false;
