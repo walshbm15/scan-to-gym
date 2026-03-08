@@ -1,0 +1,77 @@
+import { storageKeys } from './config.js';
+import { saveJSON, readJSON } from './storage.js';
+import { toEpochMs, clampDelay } from './time.js';
+import { loginWithPin, refreshAccessToken, fetchProfile } from './api.js';
+
+export class AuthController {
+  constructor({ now = () => Date.now(), setTimeoutFn = setTimeout, clearTimeoutFn = clearTimeout, onAuthChange = () => {}, onError = () => {} } = {}) {
+    this.now = now;
+    this.setTimeoutFn = setTimeoutFn;
+    this.clearTimeoutFn = clearTimeoutFn;
+    this.onAuthChange = onAuthChange;
+    this.onError = onError;
+    this.refreshTimer = null;
+    this.auth = readJSON(storageKeys.auth);
+  }
+
+  getAuth() {
+    return this.auth;
+  }
+
+  isLoggedIn() {
+    return Boolean(this.auth?.access_token && this.auth?.expires_at > this.now());
+  }
+
+  async login(username, pin) {
+    const tokenData = await loginWithPin(username, pin);
+    this.auth = this.persistTokenResponse(tokenData);
+
+    const profile = await fetchProfile(this.auth.access_token);
+    if (profile) {
+      saveJSON(storageKeys.profile, profile);
+    }
+
+    this.scheduleRefresh();
+    this.onAuthChange(this.auth);
+    return this.auth;
+  }
+
+  async refresh() {
+    if (!this.auth?.refresh_token) {
+      throw new Error('No refresh token available');
+    }
+    const tokenData = await refreshAccessToken(this.auth.refresh_token);
+    this.auth = this.persistTokenResponse({ ...tokenData, refresh_token: tokenData.refresh_token || this.auth.refresh_token });
+    this.scheduleRefresh();
+    this.onAuthChange(this.auth);
+    return this.auth;
+  }
+
+  persistTokenResponse(tokenData) {
+    const expires_at = toEpochMs(tokenData.expires_in, this.now());
+    const authState = { ...tokenData, expires_at };
+    saveJSON(storageKeys.auth, authState);
+    return authState;
+  }
+
+  scheduleRefresh() {
+    if (!this.auth?.expires_at) return;
+    if (this.refreshTimer) this.clearTimeoutFn(this.refreshTimer);
+
+    const refreshAt = this.auth.expires_at - 5 * 60 * 1000;
+    const delay = clampDelay(refreshAt - this.now());
+
+    this.refreshTimer = this.setTimeoutFn(async () => {
+      try {
+        await this.refresh();
+      } catch (error) {
+        this.onError(error);
+      }
+    }, delay);
+  }
+
+  clearTimer() {
+    if (this.refreshTimer) this.clearTimeoutFn(this.refreshTimer);
+    this.refreshTimer = null;
+  }
+}
