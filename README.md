@@ -8,7 +8,7 @@ A lightweight, mobile-first single page web app designed for low-bandwidth usage
 - Uses a documented OAuth-style member auth flow inspired by:
   - https://raincoatmoon.com/blog/reverse-engineering-adventure/
   - https://drobinin.com/posts/how-i-accidentally-became-puregyms-unofficial-apple-wallet-developer/
-- Stores auth/session state in `localStorage` (`access_token`, `refresh_token`, `expires_in`, `expires_at`, plus profile and QR state).
+- Stores auth/session state in `localStorage` (`access_token`, `refresh_token`, `expires_in`, `expires_at`, plus QR state).
 - Fetches and displays member QR information (`/api/v2/member/qrcode`).
 - Refreshes QR in background at `qr_expiry - 10 seconds` while keeping current QR visible.
 - Supports manual QR refresh.
@@ -16,7 +16,7 @@ A lightweight, mobile-first single page web app designed for low-bandwidth usage
 - Includes collapsible user sidebar/menu with logout.
 - Logout clears local storage and returns user to login.
 
-> Note: API providers may change endpoint contracts and required public `client_id` values. Keep `src/config.js` configurable for your deployment.
+> Note: API providers may change endpoint contracts and token client headers/scopes. Keep `src/config.js` configurable for your deployment.
 
 ## Tech choices
 

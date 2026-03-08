@@ -1,7 +1,6 @@
 import { AuthController } from './auth.js';
 import { QrController } from './qr.js';
-import { storageKeys } from './config.js';
-import { clearAuthData, readJSON } from './storage.js';
+import { clearAuthData } from './storage.js';
 
 const els = {
   loginView: document.getElementById('login-view'),
@@ -77,10 +76,7 @@ function renderQr(state) {
 }
 
 function loadUserName() {
-  const profile = readJSON(storageKeys.profile);
-  const fallbackName = auth.getAuth()?.username || els.usernameInput.value || 'Member';
-  const name = profile?.name || profile?.firstName || profile?.memberName || profile?.username || fallbackName;
-  els.userMenuName.textContent = name;
+  els.userMenuName.textContent = auth.getAuth()?.username || els.usernameInput.value || 'Member';
 }
 
 async function bootstrapLoggedIn() {

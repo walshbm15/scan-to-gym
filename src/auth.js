@@ -1,7 +1,7 @@
 import { storageKeys } from './config.js';
 import { saveJSON, readJSON } from './storage.js';
 import { toEpochMs, clampDelay } from './time.js';
-import { loginWithPin, refreshAccessToken, fetchProfile } from './api.js';
+import { loginWithPin, refreshAccessToken } from './api.js';
 
 export class AuthController {
   constructor({ now = () => Date.now(), setTimeoutFn = setTimeout, clearTimeoutFn = clearTimeout, onAuthChange = () => {}, onError = () => {} } = {}) {
@@ -25,11 +25,6 @@ export class AuthController {
   async login(username, pin) {
     const tokenData = await loginWithPin(username, pin);
     this.auth = this.persistTokenResponse(tokenData);
-
-    const profile = await fetchProfile(this.auth.access_token);
-    if (profile) {
-      saveJSON(storageKeys.profile, profile);
-    }
 
     this.scheduleRefresh();
     this.onAuthChange(this.auth);

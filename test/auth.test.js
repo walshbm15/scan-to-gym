@@ -11,11 +11,15 @@ function okJson(payload) {
 test('login stores auth and schedules token refresh 5 minutes before expiry', async () => {
   global.localStorage = createLocalStorageMock();
   const timeouts = [];
-  installFetchMock(async (url) => {
-    if (String(url).includes('/oauth/token')) {
+  let tokenRequest;
+  let tokenCallCount = 0;
+  installFetchMock(async (url, options = {}) => {
+    if (String(url).includes('/connect/token')) {
+      tokenCallCount += 1;
+      tokenRequest = options;
       return okJson({ access_token: 'a1', refresh_token: 'r1', expires_in: 3600, username: 'u' });
     }
-    return okJson({ firstName: 'Alex' });
+    throw new Error(`Unexpected endpoint: ${url}`);
   });
 
   const auth = new AuthController({
@@ -33,7 +37,15 @@ test('login stores auth and schedules token refresh 5 minutes before expiry', as
 
   const stored = JSON.parse(localStorage.getItem(storageKeys.auth));
   assert.equal(stored.refresh_token, 'r1');
-  assert.equal(JSON.parse(localStorage.getItem(storageKeys.profile)).firstName, 'Alex');
+  assert.equal(tokenCallCount, 1);
+  assert.equal(tokenRequest.method, 'POST');
+  assert.equal(tokenRequest.headers['Content-Type'], 'application/x-www-form-urlencoded');
+  assert.equal(tokenRequest.headers.Authorization, 'Basic cm8uY2xpZW50Og==');
+  const loginBody = new URLSearchParams(tokenRequest.body);
+  assert.equal(loginBody.get('grant_type'), 'password');
+  assert.equal(loginBody.get('username'), 'u');
+  assert.equal(loginBody.get('password'), '1234');
+  assert.equal(loginBody.get('scope'), 'pgcapi offline_access');
 });
 
 test('refresh keeps old refresh token if API does not return a new one', async () => {
@@ -41,9 +53,11 @@ test('refresh keeps old refresh token if API does not return a new one', async (
   localStorage.setItem(storageKeys.auth, JSON.stringify({ access_token: 'old', refresh_token: 'r-old', expires_at: 10000 }));
 
   let callCount = 0;
-  installFetchMock(async (url) => {
-    if (String(url).includes('/oauth/token')) {
+  let tokenRequest;
+  installFetchMock(async (url, options = {}) => {
+    if (String(url).includes('/connect/token')) {
       callCount += 1;
+      tokenRequest = options;
       return okJson(callCount === 1
         ? { access_token: 'new', expires_in: 3600 }
         : { access_token: 'new2', expires_in: 3600 }
@@ -56,4 +70,9 @@ test('refresh keeps old refresh token if API does not return a new one', async (
   await auth.refresh();
 
   assert.equal(auth.getAuth().refresh_token, 'r-old');
+  assert.equal(tokenRequest.headers.Authorization, 'Basic cm8uY2xpZW50Og==');
+  const refreshBody = new URLSearchParams(tokenRequest.body);
+  assert.equal(refreshBody.get('grant_type'), 'refresh_token');
+  assert.equal(refreshBody.get('refresh_token'), 'r-old');
+  assert.equal(refreshBody.get('scope'), 'pgcapi offline_access');
 });

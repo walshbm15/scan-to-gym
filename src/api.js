@@ -14,13 +14,15 @@ export async function loginWithPin(username, pin) {
     grant_type: 'password',
     username,
     password: pin,
-    client_id: config.clientId,
-    scope: config.scope,
+    scope: config.tokenScope,
   }).toString();
 
   return requestJson(`${config.authBaseUrl}${config.tokenPath}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: config.tokenBasicAuth,
+    },
     body,
   });
 }
@@ -29,12 +31,15 @@ export async function refreshAccessToken(refreshToken) {
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
     refresh_token: refreshToken,
-    client_id: config.clientId,
+    scope: config.tokenScope,
   }).toString();
 
   return requestJson(`${config.authBaseUrl}${config.tokenPath}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: config.tokenBasicAuth,
+    },
     body,
   });
 }
@@ -43,20 +48,4 @@ export async function fetchQrCode(accessToken) {
   return requestJson(`${config.apiBaseUrl}${config.qrPath}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-}
-
-export async function fetchProfile(accessToken) {
-  for (const path of config.profilePaths) {
-    try {
-      const result = await requestJson(`${config.apiBaseUrl}${path}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (result?.firstName || result?.name || result?.username || result?.memberName) {
-        return result;
-      }
-    } catch {
-      // Try next endpoint
-    }
-  }
-  return null;
 }
