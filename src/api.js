@@ -19,10 +19,7 @@ export async function loginWithPin(username, pin) {
 
   return requestJson(`${config.authBaseUrl}${config.tokenPath}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: config.tokenBasicAuth,
-    },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
   });
 }
@@ -36,10 +33,7 @@ export async function refreshAccessToken(refreshToken) {
 
   return requestJson(`${config.authBaseUrl}${config.tokenPath}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: config.tokenBasicAuth,
-    },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
   });
 }

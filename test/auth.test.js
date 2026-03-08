@@ -40,7 +40,7 @@ test('login stores auth and schedules token refresh 5 minutes before expiry', as
   assert.equal(tokenCallCount, 1);
   assert.equal(tokenRequest.method, 'POST');
   assert.equal(tokenRequest.headers['Content-Type'], 'application/x-www-form-urlencoded');
-  assert.equal(tokenRequest.headers.Authorization, 'Basic cm8uY2xpZW50Og==');
+  assert.equal(tokenRequest.headers.Authorization, undefined);
   const loginBody = new URLSearchParams(tokenRequest.body);
   assert.equal(loginBody.get('grant_type'), 'password');
   assert.equal(loginBody.get('username'), 'u');
@@ -70,7 +70,7 @@ test('refresh keeps old refresh token if API does not return a new one', async (
   await auth.refresh();
 
   assert.equal(auth.getAuth().refresh_token, 'r-old');
-  assert.equal(tokenRequest.headers.Authorization, 'Basic cm8uY2xpZW50Og==');
+  assert.equal(tokenRequest.headers.Authorization, undefined);
   const refreshBody = new URLSearchParams(tokenRequest.body);
   assert.equal(refreshBody.get('grant_type'), 'refresh_token');
   assert.equal(refreshBody.get('refresh_token'), 'r-old');
