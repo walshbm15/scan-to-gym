@@ -4,6 +4,8 @@
   --pg-subtle: #7e8088;
   --pg-surface: #f2f2f4;
   --pg-border: #d4d6dc;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * { box-sizing: border-box; }
@@ -17,9 +19,10 @@ body {
 
 .app-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   max-width: 460px;
   margin: 0 auto;
-  padding: 0;
+  padding: var(--safe-top) 0 var(--safe-bottom);
   background: var(--pg-surface);
 }
 

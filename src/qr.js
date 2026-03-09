@@ -31,9 +31,12 @@ export class QrController {
       const result = await fetchQrCode(accessToken);
       const expiresIn = result.expires_in ?? result.expiresIn ?? result.ExpiresIn ?? 30;
       const expiresAtRaw = result.expires_at ?? result.expiresAt ?? result.ExpiresAt;
+      const refreshIn = result.refresh_in ?? result.refreshIn ?? result.RefreshIn;
+      const refreshAtRaw = result.refresh_at ?? result.refreshAt ?? result.RefreshAt;
       const expires_at = normalizeExpiresAt(expiresAtRaw, expiresIn, this.now());
+      const refresh_at = normalizeRefreshAt(refreshAtRaw, refreshIn, this.now());
       // Normalize API variations into one state shape persisted in localStorage.
-      this.state = { ...result, expires_at, refreshing: false };
+      this.state = { ...result, expires_at, refresh_at, refreshing: false };
       saveJSON(storageKeys.qr, this.state);
       this.onState(this.state);
       this.schedule(accessToken);
@@ -46,10 +49,10 @@ export class QrController {
   }
 
   schedule(accessToken) {
-    if (!this.state?.expires_at) return;
+    if (!this.state?.refresh_at && !this.state?.expires_at) return;
     if (this.timer) this.clearTimeoutFn(this.timer);
-    // Refresh slightly before expiry so current QR remains usable while updating.
-    const refreshAt = this.state.expires_at - 10 * 1000;
+    // Prefer explicit refresh_at from API; fall back to expiry minus 10 seconds.
+    const refreshAt = this.state.refresh_at ?? (this.state.expires_at - 10 * 1000);
     const delay = clampDelay(refreshAt - this.now());
 
     this.timer = this.setTimeoutFn(() => {
@@ -71,6 +74,18 @@ function normalizeExpiresAt(expiresAtRaw, expiresIn, now) {
   }
   const seconds = typeof expiresIn === 'string' ? parseDurationToSeconds(expiresIn) : Number(expiresIn);
   return toEpochMs(Number.isFinite(seconds) ? seconds : 30, now);
+}
+
+function normalizeRefreshAt(refreshAtRaw, refreshIn, now) {
+  if (typeof refreshAtRaw === 'number' && Number.isFinite(refreshAtRaw)) return refreshAtRaw;
+  if (typeof refreshAtRaw === 'string') {
+    const parsed = Date.parse(refreshAtRaw);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  if (refreshIn == null) return null;
+  const seconds = typeof refreshIn === 'string' ? parseDurationToSeconds(refreshIn) : Number(refreshIn);
+  if (!Number.isFinite(seconds)) return null;
+  return toEpochMs(seconds, now);
 }
 
 function parseDurationToSeconds(value) {
