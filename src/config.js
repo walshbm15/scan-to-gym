@@ -1,9 +1,7 @@
-const isLocalhost =
-  typeof globalThis.location !== 'undefined' &&
-  /^(http:\/\/localhost|http:\/\/127\.0\.0\.1)(:\d+)?$/.test(globalThis.location.origin);
+const envApiBaseUrl = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_API_BASE_URL : undefined;
 
 export const config = {
-  apiBaseUrl: isLocalhost ? '/proxy/capi' : 'https://capi.puregym.com',
+  apiBaseUrl: envApiBaseUrl || '/proxy/capi',
   authBaseUrl: 'https://auth.puregym.com',
   tokenPath: '/connect/token',
   qrPath: '/api/v2/member/qrcode',

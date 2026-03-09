@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/proxy/capi/api/v2/member/qrcode",
+      "destination": "https://capi.puregym.com/api/v2/member/qrcode"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/proxy/capi/api/v2/member/qrcode",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ]
+}
