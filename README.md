@@ -1,6 +1,6 @@
 # Scan to Gym (Mobile SPA)
 
-A lightweight, mobile-first single page web app designed for low-bandwidth usage and static hosting on GitHub Pages.
+A lightweight, mobile-first single page web app for viewing a PureGym check-in QR code.
 
 ## What this app does
 
@@ -8,19 +8,22 @@ A lightweight, mobile-first single page web app designed for low-bandwidth usage
 - Uses a documented OAuth-style member auth flow inspired by:
   - https://raincoatmoon.com/blog/reverse-engineering-adventure/
   - https://drobinin.com/posts/how-i-accidentally-became-puregyms-unofficial-apple-wallet-developer/
+- Calls `POST /connect/token` with form-urlencoded body for login/refresh token flow.
 - Stores auth/session state in `localStorage` (`access_token`, `refresh_token`, `expires_in`, `expires_at`, plus QR state).
-- Fetches and displays member QR information (`/api/v2/member/qrcode`).
+- Fetches member QR information from `GET /api/v2/member/qrcode` with bearer token.
+- After login, automatically fetches QR and displays it on the QR screen.
 - Refreshes QR in background at `qr_expiry - 10 seconds` while keeping current QR visible.
 - Supports manual QR refresh.
 - Automatically refreshes access token at `token_expiry - 5 minutes`.
+- Converts token-style QR payloads (for example `exerp:checkin:...`) into a scannable QR image client-side.
 - Includes collapsible user sidebar/menu with logout.
 - Logout clears local storage and returns user to login.
 
-> Note: API providers may change endpoint contracts and token client headers/scopes. Keep `src/config.js` configurable for your deployment.
+> Note: API providers may change endpoint contracts and auth requirements. Keep `src/config.js` configurable for your deployment.
 
 ## Tech choices
 
-To keep payload and runtime overhead minimal for weak connectivity, this implementation uses vanilla ES modules and CSS (no framework runtime bundle). It remains fully static and GitHub Pages friendly.
+To keep runtime overhead minimal, this app uses vanilla ES modules and CSS. It uses Vite for local dev/build and includes a dev proxy for CORS during local testing.
 
 ## Project structure
 
@@ -38,13 +41,14 @@ To keep payload and runtime overhead minimal for weak connectivity, this impleme
 ### Prerequisites
 
 - Node.js 20+
-- Python 3 (for local static server)
 
 ### Install
 
-No package installation is required.
+```bash
+npm install
+```
 
-### Run locally (with API proxy + hot reload)
+### Run locally (hot reload + local API proxy)
 
 ```bash
 npm run dev
@@ -52,7 +56,9 @@ npm run dev
 
 Open `http://localhost:4173`.
 
-`npm run start` serves static files only and does not include the proxy layer.
+Notes:
+- `npm run start` is currently an alias of the same Vite dev server command.
+- In local dev, API requests are proxied via `/proxy/capi` to `https://capi.puregym.com` (see `vite.config.js`) to avoid browser CORS failures.
 
 ### Run tests
 
@@ -60,19 +66,20 @@ Open `http://localhost:4173`.
 npm test
 ```
 
-## Deployment (GitHub Pages)
+## Build and preview
 
-This repo includes a GitHub Actions workflow that:
+```bash
+npm run build
+npm run preview
+```
 
-1. Runs tests for pull requests.
-2. On pushes to `main`, runs tests and deploys static site to GitHub Pages.
+## Production deployment notes
 
-### One-time GitHub setup
-
-In your repository settings:
-
-- **Pages → Build and deployment → Source**: `GitHub Actions`.
-- Ensure Actions are enabled.
+- The Vite proxy only works in local dev.
+- A static host (including GitHub Pages) cannot proxy API requests by itself.
+- For production, use either:
+  - An API/service endpoint that allows your origin via CORS, or
+  - Your own backend/edge/serverless proxy and point `authBaseUrl`/`apiBaseUrl` to it.
 
 ## Security notes
 

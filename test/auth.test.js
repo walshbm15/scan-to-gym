@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AuthController } from '../src/auth.js';
-import { storageKeys } from '../src/config.js';
+import { config, storageKeys } from '../src/config.js';
 import { createLocalStorageMock, installFetchMock } from './helpers.js';
 
 function okJson(payload) {
@@ -45,7 +45,8 @@ test('login stores auth and schedules token refresh 5 minutes before expiry', as
   assert.equal(loginBody.get('grant_type'), 'password');
   assert.equal(loginBody.get('username'), 'u');
   assert.equal(loginBody.get('password'), '1234');
-  assert.equal(loginBody.get('scope'), 'pgcapi offline_access');
+  assert.equal(loginBody.get('scope'), config.tokenScope);
+  assert.equal(loginBody.get('client_id'), config.tokenClientId);
 });
 
 test('refresh keeps old refresh token if API does not return a new one', async () => {
@@ -74,5 +75,6 @@ test('refresh keeps old refresh token if API does not return a new one', async (
   const refreshBody = new URLSearchParams(tokenRequest.body);
   assert.equal(refreshBody.get('grant_type'), 'refresh_token');
   assert.equal(refreshBody.get('refresh_token'), 'r-old');
-  assert.equal(refreshBody.get('scope'), 'pgcapi offline_access');
+  assert.equal(refreshBody.get('scope'), config.tokenScope);
+  assert.equal(refreshBody.get('client_id'), config.tokenClientId);
 });

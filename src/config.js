@@ -7,7 +7,8 @@ export const config = {
   authBaseUrl: 'https://auth.puregym.com',
   tokenPath: '/connect/token',
   qrPath: '/api/v2/member/qrcode',
-  tokenScope: 'pgcapi offline_access',
+  tokenScope: 'pgcapi',
+  tokenClientId: 'ro.client',
 };
 
 export const storageKeys = {

@@ -50,6 +50,7 @@ function setLoggedIn(isLoggedIn) {
 }
 
 function renderQr(state) {
+  // Endpoint payload formats vary (token string, image data URL, svg, etc.).
   const qrPayload = getQrPayload(state);
   if (qrPayload) {
     els.qrContainer.innerHTML = '';
@@ -126,6 +127,7 @@ function looksLikeBase64(value) {
 }
 
 function renderGeneratedQr(container, payload, renderVersion) {
+  // Convert check-in token text (e.g. "exerp:checkin:...") into an actual QR image.
   QRCode.toDataURL(String(payload), {
     errorCorrectionLevel: 'M',
     margin: 1,
@@ -149,19 +151,23 @@ function renderGeneratedQr(container, payload, renderVersion) {
 }
 
 function loadUserName() {
+  // Member name can come from token response username, or fallback to typed input.
   els.userMenuName.textContent = auth.getAuth()?.username || els.usernameInput.value || 'Member';
 }
 
 async function bootstrapLoggedIn({ autoRefreshQr = true } = {}) {
+  // Enter authenticated view immediately after token success.
   setLoggedIn(true);
   loadUserName();
   auth.scheduleRefresh();
 
   const existingQr = qr.getState();
   if (existingQr) {
+    // Rehydrate cached QR and resume background refresh timer.
     renderQr(existingQr);
     qr.schedule(auth.getAuth().access_token);
   } else if (autoRefreshQr) {
+    // First QR fetch right after login when no cached QR is available.
     await qr.refresh(auth.getAuth().access_token, { background: true });
   }
 }
@@ -188,7 +194,7 @@ els.loginBtn.addEventListener('click', async () => {
   els.loginBtn.disabled = true;
   try {
     await auth.login(username, pin);
-    await bootstrapLoggedIn({ autoRefreshQr: false });
+    await bootstrapLoggedIn();
   } catch (error) {
     console.error('Login failed', error);
     showError(els.loginError, `Login failed: ${error.message}`);

@@ -25,12 +25,14 @@ export class QrController {
   }
 
   async refresh(accessToken, { background = true } = {}) {
+    // Emit intermediate state so UI can show "refreshing" while request is in flight.
     this.onState({ ...this.state, refreshing: background });
     try {
       const result = await fetchQrCode(accessToken);
       const expiresIn = result.expires_in ?? result.expiresIn ?? result.ExpiresIn ?? 30;
       const expiresAtRaw = result.expires_at ?? result.expiresAt ?? result.ExpiresAt;
       const expires_at = normalizeExpiresAt(expiresAtRaw, expiresIn, this.now());
+      // Normalize API variations into one state shape persisted in localStorage.
       this.state = { ...result, expires_at, refreshing: false };
       saveJSON(storageKeys.qr, this.state);
       this.onState(this.state);
@@ -46,6 +48,7 @@ export class QrController {
   schedule(accessToken) {
     if (!this.state?.expires_at) return;
     if (this.timer) this.clearTimeoutFn(this.timer);
+    // Refresh slightly before expiry so current QR remains usable while updating.
     const refreshAt = this.state.expires_at - 10 * 1000;
     const delay = clampDelay(refreshAt - this.now());
 
