@@ -4,7 +4,7 @@ A lightweight, mobile-first single page web app for viewing a PureGym check-in Q
 
 ## What this app does
 
-- Shows a login view (username + PIN) on first load.
+- Shows a login view (email + PIN) on first load.
 - Uses a documented OAuth-style member auth flow inspired by:
   - https://raincoatmoon.com/blog/reverse-engineering-adventure/
   - https://drobinin.com/posts/how-i-accidentally-became-puregyms-unofficial-apple-wallet-developer/
@@ -17,7 +17,7 @@ A lightweight, mobile-first single page web app for viewing a PureGym check-in Q
 - Supports manual QR refresh.
 - Automatically refreshes access token at `token_expiry - 5 minutes`.
 - Converts token-style QR payloads (for example `exerp:checkin:...`) into a scannable QR image client-side.
-- Supports pressing `Enter` on the login screen (username or PIN field) to trigger login.
+- Supports pressing `Enter` on the login screen (email or PIN field) to trigger login.
 - Includes a simplified sidebar/menu with logout in the logged-in view.
 - Logout clears local storage and returns user to login.
 

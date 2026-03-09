@@ -6,7 +6,7 @@ import { clearAuthData } from './storage.js';
 const els = {
   loginView: document.getElementById('login-view'),
   qrView: document.getElementById('qr-view'),
-  usernameInput: document.getElementById('username'),
+  emailInput: document.getElementById('email'),
   pinInput: document.getElementById('pin'),
   loginBtn: document.getElementById('login-btn'),
   loginError: document.getElementById('login-error'),
@@ -46,7 +46,7 @@ function setLoggedIn(isLoggedIn) {
   els.qrView.classList.toggle('hidden', !isLoggedIn);
   els.userMenu.classList.toggle('hidden', true);
   els.userMenuToggle.classList.toggle('hidden', !isLoggedIn);
-  els.usernameInput.disabled = isLoggedIn;
+  els.emailInput.disabled = isLoggedIn;
   els.pinInput.disabled = isLoggedIn;
   els.loginBtn.disabled = isLoggedIn;
   if (!isLoggedIn) {
@@ -200,17 +200,17 @@ function forceLogout() {
 
 async function handleLogin() {
   hideError(els.loginError);
-  const username = els.usernameInput.value.trim();
+  const email = els.emailInput.value.trim();
   const pin = els.pinInput.value.trim();
 
-  if (!username || !pin) {
-    showError(els.loginError, 'Username and PIN are required');
+  if (!email || !pin) {
+    showError(els.loginError, 'Email and PIN are required');
     return;
   }
 
   els.loginBtn.disabled = true;
   try {
-    await auth.login(username, pin);
+    await auth.login(email, pin);
     await bootstrapLoggedIn();
   } catch (error) {
     console.error('Login failed', error);
@@ -224,7 +224,7 @@ els.loginBtn.addEventListener('click', () => {
   handleLogin();
 });
 
-[els.usernameInput, els.pinInput].forEach((input) => {
+[els.emailInput, els.pinInput].forEach((input) => {
   input.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter') return;
     event.preventDefault();

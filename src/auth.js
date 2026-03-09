@@ -28,9 +28,9 @@ export class AuthController {
     return Boolean(this.auth?.access_token && this.auth?.expires_at > this.now());
   }
 
-  async login(username, pin) {
-    // Step 1: exchange username+pin for tokens.
-    const tokenData = await loginWithPin(username, pin);
+  async login(email, pin) {
+    // Step 1: exchange email+pin for tokens.
+    const tokenData = await loginWithPin(email, pin);
     // Step 2: persist computed auth state (including absolute expiry).
     this.auth = this.persistTokenResponse({ ...tokenData, member_pin: pin });
 

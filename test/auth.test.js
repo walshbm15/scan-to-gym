@@ -17,7 +17,7 @@ test('login stores auth and schedules token refresh 5 minutes before expiry', as
     if (String(url).includes('/connect/token')) {
       tokenCallCount += 1;
       tokenRequest = options;
-      return okJson({ access_token: 'a1', refresh_token: 'r1', expires_in: 3600, username: 'u' });
+      return okJson({ access_token: 'a1', refresh_token: 'r1', expires_in: 3600, username: 'u@example.com' });
     }
     throw new Error(`Unexpected endpoint: ${url}`);
   });
@@ -31,7 +31,7 @@ test('login stores auth and schedules token refresh 5 minutes before expiry', as
     clearTimeoutFn: () => {},
   });
 
-  const state = await auth.login('u', '1234');
+  const state = await auth.login('u@example.com', '1234');
   assert.equal(state.expires_at, 3600000);
   assert.equal(timeouts[0].delay, 3300000);
 
@@ -44,7 +44,7 @@ test('login stores auth and schedules token refresh 5 minutes before expiry', as
   assert.equal(tokenRequest.headers.Authorization, undefined);
   const loginBody = new URLSearchParams(tokenRequest.body);
   assert.equal(loginBody.get('grant_type'), 'password');
-  assert.equal(loginBody.get('username'), 'u');
+  assert.equal(loginBody.get('username'), 'u@example.com');
   assert.equal(loginBody.get('password'), '1234');
   assert.equal(loginBody.get('scope'), config.tokenScope);
   assert.equal(loginBody.get('client_id'), config.tokenClientId);
