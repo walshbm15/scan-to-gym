@@ -47,3 +47,49 @@ test('onState exposes background refreshing state', async () => {
   assert.equal(events[0].refreshing, true);
   assert.equal(events.at(-1).refreshing, false);
 });
+
+test('qr refresh schedules update using RefreshAt when available', async () => {
+  global.localStorage = createLocalStorageMock();
+  const timeouts = [];
+  installFetchMock(async () => okJson({
+    QrCode: 'abc',
+    RefreshAt: '2026-03-09T23:05:46.050Z',
+    ExpiresAt: '2026-03-16T22:59:46.050Z',
+  }));
+
+  const controller = new QrController({
+    now: () => Date.parse('2026-03-09T23:04:46.050Z'),
+    setTimeoutFn: (cb, delay) => {
+      timeouts.push({ cb, delay });
+      return 1;
+    },
+    clearTimeoutFn: () => {},
+  });
+
+  const state = await controller.refresh('token', { background: true });
+  assert.equal(state.refresh_at, Date.parse('2026-03-09T23:05:46.050Z'));
+  assert.equal(timeouts[0].delay, 60000);
+});
+
+test('qr refresh schedules update using RefreshIn when RefreshAt is missing', async () => {
+  global.localStorage = createLocalStorageMock();
+  const timeouts = [];
+  installFetchMock(async () => okJson({
+    qrCode: 'abc',
+    RefreshIn: '0:01:00',
+    ExpiresIn: '167:55:00',
+  }));
+
+  const controller = new QrController({
+    now: () => 1000,
+    setTimeoutFn: (cb, delay) => {
+      timeouts.push({ cb, delay });
+      return 1;
+    },
+    clearTimeoutFn: () => {},
+  });
+
+  const state = await controller.refresh('token', { background: true });
+  assert.equal(state.refresh_at, 61000);
+  assert.equal(timeouts[0].delay, 60000);
+});
