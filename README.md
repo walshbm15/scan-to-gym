@@ -4,19 +4,21 @@ A lightweight, mobile-first single page web app for viewing a PureGym check-in Q
 
 ## What this app does
 
-- Shows a login view (username + PIN) on first load.
+- Shows a login view (email + PIN) on first load.
 - Uses a documented OAuth-style member auth flow inspired by:
   - https://raincoatmoon.com/blog/reverse-engineering-adventure/
   - https://drobinin.com/posts/how-i-accidentally-became-puregyms-unofficial-apple-wallet-developer/
 - Calls `POST /connect/token` with form-urlencoded body for login/refresh token flow.
-- Stores auth/session state in `localStorage` (`access_token`, `refresh_token`, `expires_in`, `expires_at`, plus QR state).
+- Stores auth/session state in `localStorage` (`access_token`, `refresh_token`, `expires_in`, `expires_at`, `member_pin`, plus QR state).
 - Fetches member QR information from `GET /api/v2/member/qrcode` with bearer token.
 - After login, automatically fetches QR and displays it on the QR screen.
+- Displays the stored member PIN above the QR code in `xxxx-xxxx` format as a backup option if the QR code does not refresh due to poor network connectivity.
 - Refreshes QR in background at `qr_expiry - 10 seconds` while keeping current QR visible.
 - Supports manual QR refresh.
 - Automatically refreshes access token at `token_expiry - 5 minutes`.
 - Converts token-style QR payloads (for example `exerp:checkin:...`) into a scannable QR image client-side.
-- Includes collapsible user sidebar/menu with logout.
+- Supports pressing `Enter` on the login screen (email or PIN field) to trigger login.
+- Includes a simplified sidebar/menu with logout in the logged-in view.
 - Logout clears local storage and returns user to login.
 
 > Note: API providers may change endpoint contracts and auth requirements. Keep `src/config.js` configurable for your deployment.

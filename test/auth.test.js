@@ -17,7 +17,7 @@ test('login stores auth and schedules token refresh 5 minutes before expiry', as
     if (String(url).includes('/connect/token')) {
       tokenCallCount += 1;
       tokenRequest = options;
-      return okJson({ access_token: 'a1', refresh_token: 'r1', expires_in: 3600, username: 'u' });
+      return okJson({ access_token: 'a1', refresh_token: 'r1', expires_in: 3600, username: 'u@example.com' });
     }
     throw new Error(`Unexpected endpoint: ${url}`);
   });
@@ -31,19 +31,20 @@ test('login stores auth and schedules token refresh 5 minutes before expiry', as
     clearTimeoutFn: () => {},
   });
 
-  const state = await auth.login('u', '1234');
+  const state = await auth.login('u@example.com', '1234');
   assert.equal(state.expires_at, 3600000);
   assert.equal(timeouts[0].delay, 3300000);
 
   const stored = JSON.parse(localStorage.getItem(storageKeys.auth));
   assert.equal(stored.refresh_token, 'r1');
+  assert.equal(stored.member_pin, '1234');
   assert.equal(tokenCallCount, 1);
   assert.equal(tokenRequest.method, 'POST');
   assert.equal(tokenRequest.headers['Content-Type'], 'application/x-www-form-urlencoded');
   assert.equal(tokenRequest.headers.Authorization, undefined);
   const loginBody = new URLSearchParams(tokenRequest.body);
   assert.equal(loginBody.get('grant_type'), 'password');
-  assert.equal(loginBody.get('username'), 'u');
+  assert.equal(loginBody.get('username'), 'u@example.com');
   assert.equal(loginBody.get('password'), '1234');
   assert.equal(loginBody.get('scope'), config.tokenScope);
   assert.equal(loginBody.get('client_id'), config.tokenClientId);
@@ -51,7 +52,12 @@ test('login stores auth and schedules token refresh 5 minutes before expiry', as
 
 test('refresh keeps old refresh token if API does not return a new one', async () => {
   global.localStorage = createLocalStorageMock();
-  localStorage.setItem(storageKeys.auth, JSON.stringify({ access_token: 'old', refresh_token: 'r-old', expires_at: 10000 }));
+  localStorage.setItem(storageKeys.auth, JSON.stringify({
+    access_token: 'old',
+    refresh_token: 'r-old',
+    expires_at: 10000,
+    member_pin: '98765432',
+  }));
 
   let callCount = 0;
   let tokenRequest;
@@ -71,6 +77,7 @@ test('refresh keeps old refresh token if API does not return a new one', async (
   await auth.refresh();
 
   assert.equal(auth.getAuth().refresh_token, 'r-old');
+  assert.equal(auth.getAuth().member_pin, '98765432');
   assert.equal(tokenRequest.headers.Authorization, undefined);
   const refreshBody = new URLSearchParams(tokenRequest.body);
   assert.equal(refreshBody.get('grant_type'), 'refresh_token');

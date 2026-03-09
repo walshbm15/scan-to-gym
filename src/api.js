@@ -10,11 +10,12 @@ async function requestJson(url, options = {}) {
   return response.json();
 }
 
-export async function loginWithPin(username, pin) {
+export async function loginWithPin(email, pin) {
   // PureGym auth endpoint expects form-encoded credentials for password grant.
   const body = new URLSearchParams({
     grant_type: 'password',
-    username,
+    // API contract still uses "username" as the form key.
+    username: email,
     password: pin,
     scope: config.tokenScope,
     client_id: config.tokenClientId,

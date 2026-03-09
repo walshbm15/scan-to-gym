@@ -6,7 +6,7 @@ import { clearAuthData } from './storage.js';
 const els = {
   loginView: document.getElementById('login-view'),
   qrView: document.getElementById('qr-view'),
-  usernameInput: document.getElementById('username'),
+  emailInput: document.getElementById('email'),
   pinInput: document.getElementById('pin'),
   loginBtn: document.getElementById('login-btn'),
   loginError: document.getElementById('login-error'),
@@ -15,10 +15,9 @@ const els = {
   qrRefreshing: document.getElementById('qr-refreshing'),
   qrError: document.getElementById('qr-error'),
   manualRefreshBtn: document.getElementById('manual-refresh-btn'),
+  memberPin: document.getElementById('member-pin'),
   userMenu: document.getElementById('user-menu'),
   userMenuToggle: document.getElementById('user-menu-toggle'),
-  userMenuName: document.getElementById('user-menu-name'),
-  userMenuContent: document.getElementById('user-menu-content'),
   logoutBtn: document.getElementById('logout-btn'),
 };
 
@@ -45,8 +44,14 @@ function hideError(element) {
 function setLoggedIn(isLoggedIn) {
   els.loginView.classList.toggle('hidden', isLoggedIn);
   els.qrView.classList.toggle('hidden', !isLoggedIn);
-  els.userMenu.classList.toggle('hidden', !isLoggedIn);
+  els.userMenu.classList.toggle('hidden', true);
   els.userMenuToggle.classList.toggle('hidden', !isLoggedIn);
+  els.emailInput.disabled = isLoggedIn;
+  els.pinInput.disabled = isLoggedIn;
+  els.loginBtn.disabled = isLoggedIn;
+  if (!isLoggedIn) {
+    els.userMenuToggle.setAttribute('aria-expanded', 'false');
+  }
 }
 
 function renderQr(state) {
@@ -150,15 +155,24 @@ function renderGeneratedQr(container, payload, renderVersion) {
   });
 }
 
-function loadUserName() {
-  // Member name can come from token response username, or fallback to typed input.
-  els.userMenuName.textContent = auth.getAuth()?.username || els.usernameInput.value || 'Member';
+function formatMemberPin(pin) {
+  const raw = String(pin || '').replace(/\D/g, '');
+  if (!raw) return '';
+  const sanitized = raw.slice(0, 8);
+  if (sanitized.length <= 4) return sanitized;
+  return `${sanitized.slice(0, 4)}-${sanitized.slice(4)}`;
+}
+
+function loadMemberPin() {
+  const formattedPin = formatMemberPin(auth.getAuth()?.member_pin);
+  els.memberPin.textContent = formattedPin;
+  els.memberPin.classList.toggle('hidden', !formattedPin);
 }
 
 async function bootstrapLoggedIn({ autoRefreshQr = true } = {}) {
   // Enter authenticated view immediately after token success.
   setLoggedIn(true);
-  loadUserName();
+  loadMemberPin();
   auth.scheduleRefresh();
 
   const existingQr = qr.getState();
@@ -177,30 +191,47 @@ function forceLogout() {
   qr.clearTimer();
   clearAuthData();
   setLoggedIn(false);
+  els.userMenu.classList.add('hidden');
   els.qrContainer.innerHTML = '';
+  els.memberPin.textContent = '';
+  els.pinInput.value = '';
   hideError(els.qrError);
 }
 
-els.loginBtn.addEventListener('click', async () => {
+async function handleLogin() {
   hideError(els.loginError);
-  const username = els.usernameInput.value.trim();
+  const email = els.emailInput.value.trim();
   const pin = els.pinInput.value.trim();
 
-  if (!username || !pin) {
-    showError(els.loginError, 'Username and PIN are required');
+  if (!email || !pin) {
+    showError(els.loginError, 'Email and PIN are required');
     return;
   }
 
   els.loginBtn.disabled = true;
   try {
-    await auth.login(username, pin);
+    await auth.login(email, pin);
     await bootstrapLoggedIn();
   } catch (error) {
     console.error('Login failed', error);
     showError(els.loginError, `Login failed: ${error.message}`);
   } finally {
-    els.loginBtn.disabled = false;
+    els.loginBtn.disabled = auth.isLoggedIn();
   }
+}
+
+els.loginBtn.addEventListener('click', () => {
+  handleLogin();
+});
+
+[els.emailInput, els.pinInput].forEach((input) => {
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    if (!els.loginBtn.disabled) {
+      handleLogin();
+    }
+  });
 });
 
 els.manualRefreshBtn.addEventListener('click', async () => {
@@ -213,11 +244,9 @@ els.manualRefreshBtn.addEventListener('click', async () => {
 });
 
 els.userMenuToggle.addEventListener('click', () => {
-  els.userMenuContent.classList.toggle('hidden');
-});
-
-els.userMenuName.addEventListener('click', () => {
-  els.userMenuContent.classList.toggle('hidden');
+  const isExpanded = els.userMenuToggle.getAttribute('aria-expanded') === 'true';
+  els.userMenuToggle.setAttribute('aria-expanded', String(!isExpanded));
+  els.userMenu.classList.toggle('hidden', isExpanded);
 });
 
 els.logoutBtn.addEventListener('click', () => {

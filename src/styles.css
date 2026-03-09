@@ -69,12 +69,12 @@ body {
 
 .expires-label {
   margin-top: 1rem;
-  font-size: 1.9rem;
+  font-size: 1.1rem;
 }
 
 .expiry-text {
   margin: 0.25rem 0 1.4rem;
-  font-size: 2rem;
+  font-size: 1.15rem;
   color: #44464f;
 }
 
@@ -108,34 +108,67 @@ button { cursor: pointer; }
   font-weight: 600;
 }
 
-.secondary-btn,
-.icon-btn,
-.user-name-btn {
+.secondary-btn {
   border: 1px solid #c8cad1;
   border-radius: 8px;
-  padding: 0.5rem 0.7rem;
+  padding: 0.7rem 0.95rem;
   background: #fff;
   color: #3d4049;
 }
 
 .user-menu {
-  margin: 0.8rem 1rem 0;
+  margin: 0.5rem 1rem 0;
   background: #fff;
   border-radius: 10px;
   border: 1px solid var(--pg-border);
-  padding: 0.55rem;
+  padding: 0.75rem;
+  display: grid;
+  justify-items: stretch;
 }
 
-.user-name-btn {
+.menu-btn {
+  border: 1px solid #8a8d98;
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  background: #fff;
+  color: #31333b;
+  font-weight: 700;
+  font-size: 0.95rem;
+  min-height: 44px;
+  min-width: 110px;
+}
+
+.logout-btn {
   width: 100%;
-  text-align: left;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.98rem;
+  min-height: 44px;
 }
 
 .qr-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
+}
+
+.refresh-btn {
+  border: 1px solid #2f7681;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  background: #58aeb3;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  min-height: 46px;
+}
+
+.member-pin {
+  margin: 0 0 0.9rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #3f424b;
+  text-align: center;
 }
 
 .qr-container {
@@ -169,7 +202,8 @@ button { cursor: pointer; }
 
 .refreshing {
   color: var(--pg-subtle);
-  margin-top: 0.5rem;
+  margin: 0.5rem auto 0;
+  text-align: center;
 }
 
 .hidden { display: none !important; }
@@ -177,6 +211,14 @@ button { cursor: pointer; }
 @media (max-width: 390px) {
   .top-bar h1 { font-size: 1.75rem; }
   .member-title { font-size: 2rem; }
-  .expires-label { font-size: 1.45rem; }
-  .expiry-text { font-size: 1.6rem; }
+  .expires-label { font-size: 1rem; }
+  .expiry-text { font-size: 1.05rem; }
+  .menu-btn {
+    min-width: 100px;
+    font-size: 0.88rem;
+  }
+  .refresh-btn {
+    font-size: 0.92rem;
+    padding: 0.6rem 0.85rem;
+  }
 }
