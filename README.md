@@ -61,6 +61,7 @@ Open `http://localhost:4173`.
 Notes:
 - `npm run start` is currently an alias of the same Vite dev server command.
 - In local dev, API requests are proxied via `/proxy/capi` to `https://capi.puregym.com` (see `vite.config.js`) to avoid browser CORS failures.
+- You can override API base URL at build time with `VITE_API_BASE_URL` (default is `/proxy/capi`).
 
 ### Run tests
 
@@ -78,10 +79,17 @@ npm run preview
 ## Production deployment notes
 
 - The Vite proxy only works in local dev.
-- A static host (including GitHub Pages) cannot proxy API requests by itself.
-- For production, use either:
-  - An API/service endpoint that allows your origin via CORS, or
-  - Your own backend/edge/serverless proxy and point `authBaseUrl`/`apiBaseUrl` to it.
+- This repository includes a Vercel proxy route in `vercel.json`:
+  - `/proxy/capi/api/v2/member/qrcode` -> `https://capi.puregym.com/api/v2/member/qrcode`
+  - Response header `Cache-Control: no-store` is set on the proxied route.
+- The proxy route is intentionally scoped to the QR endpoint instead of all CAPI paths.
+
+### GitHub Actions deployment to Vercel
+
+`.github/workflows/build.yml` deploys to Vercel on pushes to `main`. Add these repository secrets:
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
 
 ## Security notes
 
