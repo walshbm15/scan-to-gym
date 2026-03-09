@@ -12,14 +12,11 @@
       <header class="top-bar">
         <div class="brand-mark" aria-hidden="true">◖</div>
         <h1>PureGym</h1>
-        <button id="user-menu-toggle" class="icon-btn hidden" aria-label="Open user menu">☰</button>
+        <button id="user-menu-toggle" type="button" class="menu-btn hidden" aria-label="Toggle sidebar menu" aria-expanded="false" data-1p-ignore>☰ Menu</button>
       </header>
 
       <aside id="user-menu" class="user-menu hidden" aria-live="polite">
-        <button id="user-menu-name" class="user-name-btn"></button>
-        <div id="user-menu-content" class="hidden">
-          <button id="logout-btn" class="secondary-btn">Logout</button>
-        </div>
+        <button id="logout-btn" type="button" class="secondary-btn logout-btn" data-1p-ignore>Logout</button>
       </aside>
 
       <section id="login-view" class="card">
@@ -31,19 +28,18 @@
         <label for="pin">PIN</label>
         <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" required />
 
-        <button id="login-btn" class="primary-btn">Login</button>
+        <button id="login-btn" type="button" class="primary-btn">Login</button>
         <p id="login-error" class="error hidden"></p>
       </section>
 
       <section id="qr-view" class="card hidden">
-        <p class="eyebrow">PUREGYM</p>
         <div class="qr-header">
-          <h2 class="member-title">ACTIVE MEMBER</h2>
-          <button id="manual-refresh-btn" class="icon-btn" aria-label="Refresh QR code">⟳</button>
+          <button id="manual-refresh-btn" type="button" class="refresh-btn" aria-label="Refresh QR code" data-1p-ignore>⟳ Refresh QR</button>
         </div>
 
         <p class="eyebrow expires-label">EXPIRES</p>
         <p id="qr-expiry" class="expiry-text"></p>
+        <p id="member-pin" class="member-pin hidden"></p>
 
         <div id="qr-container" class="qr-container"></div>
         <p id="qr-refreshing" class="refreshing hidden">Refreshing in background…</p>

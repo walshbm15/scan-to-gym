@@ -32,7 +32,7 @@ export class AuthController {
     // Step 1: exchange username+pin for tokens.
     const tokenData = await loginWithPin(username, pin);
     // Step 2: persist computed auth state (including absolute expiry).
-    this.auth = this.persistTokenResponse(tokenData);
+    this.auth = this.persistTokenResponse({ ...tokenData, member_pin: pin });
 
     // Step 3: arm proactive refresh and notify UI.
     this.scheduleRefresh();
@@ -46,7 +46,11 @@ export class AuthController {
     }
     // Refresh token exchange keeps the old refresh token if API omits a new one.
     const tokenData = await refreshAccessToken(this.auth.refresh_token);
-    this.auth = this.persistTokenResponse({ ...tokenData, refresh_token: tokenData.refresh_token || this.auth.refresh_token });
+    this.auth = this.persistTokenResponse({
+      ...tokenData,
+      refresh_token: tokenData.refresh_token || this.auth.refresh_token,
+      member_pin: tokenData.member_pin || this.auth.member_pin,
+    });
     this.scheduleRefresh();
     this.onAuthChange(this.auth);
     return this.auth;
