@@ -17,5 +17,4 @@ export function readJSON(key) {
 export function clearAuthData() {
   localStorage.removeItem(storageKeys.auth);
   localStorage.removeItem(storageKeys.qr);
-  localStorage.removeItem(storageKeys.profile);
 }

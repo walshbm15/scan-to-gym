@@ -1,16 +1,17 @@
+const isLocalhost =
+  typeof globalThis.location !== 'undefined' &&
+  /^(http:\/\/localhost|http:\/\/127\.0\.0\.1)(:\d+)?$/.test(globalThis.location.origin);
+
 export const config = {
-  apiBaseUrl: 'https://capi.puregym.com',
+  apiBaseUrl: isLocalhost ? '/proxy/capi' : 'https://capi.puregym.com',
   authBaseUrl: 'https://auth.puregym.com',
-  tokenPath: '/oauth/token',
+  tokenPath: '/connect/token',
   qrPath: '/api/v2/member/qrcode',
-  profilePaths: ['/api/v2/member', '/api/v1/member'],
-  // Public app identifiers change over time. Keep editable for self-hosters.
-  clientId: 'puregym-app',
-  scope: 'openid profile email offline_access',
+  tokenScope: 'pgcapi',
+  tokenClientId: 'ro.client',
 };
 
 export const storageKeys = {
   auth: 'scan_to_gym_auth',
   qr: 'scan_to_gym_qr',
-  profile: 'scan_to_gym_profile',
 };

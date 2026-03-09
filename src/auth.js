@@ -1,10 +1,16 @@
 import { storageKeys } from './config.js';
 import { saveJSON, readJSON } from './storage.js';
 import { toEpochMs, clampDelay } from './time.js';
-import { loginWithPin, refreshAccessToken, fetchProfile } from './api.js';
+import { loginWithPin, refreshAccessToken } from './api.js';
 
 export class AuthController {
-  constructor({ now = () => Date.now(), setTimeoutFn = setTimeout, clearTimeoutFn = clearTimeout, onAuthChange = () => {}, onError = () => {} } = {}) {
+  constructor({
+    now = () => Date.now(),
+    setTimeoutFn = (cb, delay) => globalThis.setTimeout(cb, delay),
+    clearTimeoutFn = (id) => globalThis.clearTimeout(id),
+    onAuthChange = () => {},
+    onError = () => {},
+  } = {}) {
     this.now = now;
     this.setTimeoutFn = setTimeoutFn;
     this.clearTimeoutFn = clearTimeoutFn;
@@ -23,14 +29,12 @@ export class AuthController {
   }
 
   async login(username, pin) {
+    // Step 1: exchange username+pin for tokens.
     const tokenData = await loginWithPin(username, pin);
+    // Step 2: persist computed auth state (including absolute expiry).
     this.auth = this.persistTokenResponse(tokenData);
 
-    const profile = await fetchProfile(this.auth.access_token);
-    if (profile) {
-      saveJSON(storageKeys.profile, profile);
-    }
-
+    // Step 3: arm proactive refresh and notify UI.
     this.scheduleRefresh();
     this.onAuthChange(this.auth);
     return this.auth;
@@ -40,6 +44,7 @@ export class AuthController {
     if (!this.auth?.refresh_token) {
       throw new Error('No refresh token available');
     }
+    // Refresh token exchange keeps the old refresh token if API omits a new one.
     const tokenData = await refreshAccessToken(this.auth.refresh_token);
     this.auth = this.persistTokenResponse({ ...tokenData, refresh_token: tokenData.refresh_token || this.auth.refresh_token });
     this.scheduleRefresh();
@@ -58,6 +63,7 @@ export class AuthController {
     if (!this.auth?.expires_at) return;
     if (this.refreshTimer) this.clearTimeoutFn(this.refreshTimer);
 
+    // Refresh 5 minutes early so UI is unlikely to hit an expired access token.
     const refreshAt = this.auth.expires_at - 5 * 60 * 1000;
     const delay = clampDelay(refreshAt - this.now());
 

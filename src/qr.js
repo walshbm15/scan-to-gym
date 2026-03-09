@@ -4,7 +4,13 @@ import { clampDelay, toEpochMs } from './time.js';
 import { fetchQrCode } from './api.js';
 
 export class QrController {
-  constructor({ now = () => Date.now(), setTimeoutFn = setTimeout, clearTimeoutFn = clearTimeout, onState = () => {}, onError = () => {} } = {}) {
+  constructor({
+    now = () => Date.now(),
+    setTimeoutFn = (cb, delay) => globalThis.setTimeout(cb, delay),
+    clearTimeoutFn = (id) => globalThis.clearTimeout(id),
+    onState = () => {},
+    onError = () => {},
+  } = {}) {
     this.now = now;
     this.setTimeoutFn = setTimeoutFn;
     this.clearTimeoutFn = clearTimeoutFn;
@@ -19,11 +25,14 @@ export class QrController {
   }
 
   async refresh(accessToken, { background = true } = {}) {
+    // Emit intermediate state so UI can show "refreshing" while request is in flight.
     this.onState({ ...this.state, refreshing: background });
     try {
       const result = await fetchQrCode(accessToken);
-      const expiresIn = result.expires_in ?? result.expiresIn ?? 30;
-      const expires_at = result.expires_at ?? toEpochMs(expiresIn, this.now());
+      const expiresIn = result.expires_in ?? result.expiresIn ?? result.ExpiresIn ?? 30;
+      const expiresAtRaw = result.expires_at ?? result.expiresAt ?? result.ExpiresAt;
+      const expires_at = normalizeExpiresAt(expiresAtRaw, expiresIn, this.now());
+      // Normalize API variations into one state shape persisted in localStorage.
       this.state = { ...result, expires_at, refreshing: false };
       saveJSON(storageKeys.qr, this.state);
       this.onState(this.state);
@@ -39,6 +48,7 @@ export class QrController {
   schedule(accessToken) {
     if (!this.state?.expires_at) return;
     if (this.timer) this.clearTimeoutFn(this.timer);
+    // Refresh slightly before expiry so current QR remains usable while updating.
     const refreshAt = this.state.expires_at - 10 * 1000;
     const delay = clampDelay(refreshAt - this.now());
 
@@ -51,4 +61,23 @@ export class QrController {
     if (this.timer) this.clearTimeoutFn(this.timer);
     this.timer = null;
   }
+}
+
+function normalizeExpiresAt(expiresAtRaw, expiresIn, now) {
+  if (typeof expiresAtRaw === 'number' && Number.isFinite(expiresAtRaw)) return expiresAtRaw;
+  if (typeof expiresAtRaw === 'string') {
+    const parsed = Date.parse(expiresAtRaw);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  const seconds = typeof expiresIn === 'string' ? parseDurationToSeconds(expiresIn) : Number(expiresIn);
+  return toEpochMs(Number.isFinite(seconds) ? seconds : 30, now);
+}
+
+function parseDurationToSeconds(value) {
+  const parts = String(value).split(':').map(Number);
+  if (parts.some((n) => !Number.isFinite(n))) return NaN;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 1) return parts[0];
+  return NaN;
 }

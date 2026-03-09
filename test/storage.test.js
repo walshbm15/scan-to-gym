@@ -14,10 +14,8 @@ test('clearAuthData removes all persisted auth fields', () => {
   global.localStorage = createLocalStorageMock();
   localStorage.setItem(storageKeys.auth, '{}');
   localStorage.setItem(storageKeys.qr, '{}');
-  localStorage.setItem(storageKeys.profile, '{}');
   clearAuthData();
 
   assert.equal(localStorage.getItem(storageKeys.auth), null);
   assert.equal(localStorage.getItem(storageKeys.qr), null);
-  assert.equal(localStorage.getItem(storageKeys.profile), null);
 });

@@ -1,6 +1,7 @@
 import { config } from './config.js';
 
 async function requestJson(url, options = {}) {
+  // Shared fetch helper: fail fast with response text so UI gets actionable errors.
   const response = await fetch(url, options);
   if (!response.ok) {
     const message = await response.text();
@@ -10,12 +11,13 @@ async function requestJson(url, options = {}) {
 }
 
 export async function loginWithPin(username, pin) {
+  // PureGym auth endpoint expects form-encoded credentials for password grant.
   const body = new URLSearchParams({
     grant_type: 'password',
     username,
     password: pin,
-    client_id: config.clientId,
-    scope: config.scope,
+    scope: config.tokenScope,
+    client_id: config.tokenClientId,
   }).toString();
 
   return requestJson(`${config.authBaseUrl}${config.tokenPath}`, {
@@ -26,10 +28,12 @@ export async function loginWithPin(username, pin) {
 }
 
 export async function refreshAccessToken(refreshToken) {
+  // Refresh flow reuses the same token endpoint with grant_type=refresh_token.
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
     refresh_token: refreshToken,
-    client_id: config.clientId,
+    scope: config.tokenScope,
+    client_id: config.tokenClientId,
   }).toString();
 
   return requestJson(`${config.authBaseUrl}${config.tokenPath}`, {
@@ -40,23 +44,8 @@ export async function refreshAccessToken(refreshToken) {
 }
 
 export async function fetchQrCode(accessToken) {
+  // QR endpoint is a simple bearer-authenticated GET.
   return requestJson(`${config.apiBaseUrl}${config.qrPath}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-}
-
-export async function fetchProfile(accessToken) {
-  for (const path of config.profilePaths) {
-    try {
-      const result = await requestJson(`${config.apiBaseUrl}${path}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (result?.firstName || result?.name || result?.username || result?.memberName) {
-        return result;
-      }
-    } catch {
-      // Try next endpoint
-    }
-  }
-  return null;
 }
