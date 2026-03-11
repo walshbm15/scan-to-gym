@@ -1,7 +1,10 @@
 import QRCode from 'qrcode';
+import { registerSW } from 'virtual:pwa-register';
 import { AuthController } from './auth.js';
 import { QrController } from './qr.js';
 import { clearAuthData } from './storage.js';
+
+registerSW({ immediate: true });
 
 const els = {
   loginView: document.getElementById('login-view'),
